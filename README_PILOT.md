@@ -40,16 +40,14 @@ chuẩn hóa tên để khớp với `valid.jsonl`.
 
 ## 2. Cài môi trường Pixi
 
-Mở terminal, chuyển vào thư mục repository vừa clone rồi cài môi trường:
+Mở terminal ngay tại thư mục chứa file `main.nf`, rồi cài môi trường:
 
 ```bash
-cd final_project_xlnntn_hp2_hcmus
 pixi install --locked
 ```
 
-Nếu repository được đổi tên khi clone hoặc giải nén, thay
-`final_project_xlnntn_hp2_hcmus` bằng tên thư mục tương ứng. Tất cả đường dẫn
-còn lại trong tài liệu đều tương đối tính từ thư mục repository này.
+Tất cả đường dẫn trong tài liệu đều tương đối tính từ thư mục đang chứa
+`main.nf`; không cần tạo thêm hoặc đổi tên thư mục.
 
 Lệnh trên cài đúng các phiên bản đã khóa trong `pixi.lock`, bao gồm Python,
 Java, Nextflow, PaddlePaddle và các thư viện Python. Không cài thêm bằng `pip`
