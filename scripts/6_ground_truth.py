@@ -35,6 +35,10 @@ def parse_args() -> argparse.Namespace:
                         help="File ground_truth.jsonl đầu ra")
     parser.add_argument("--min-confidence", type=float, default=0.0,
                         help="Lọc thêm theo confidence (mặc định: 0.0 = không lọc thêm)")
+    parser.add_argument(
+        "--provider", choices=("deepseek", "qwen"), default="deepseek",
+        help="Tên provider dùng làm field kết quả (mặc định: deepseek)",
+    )
     return parser.parse_args()
 
 
@@ -72,7 +76,7 @@ def main() -> int:
                 "ground_truth": ground_truth_text,
                 "label": paddle_text,
                 "gemini": [{"text": gemini_text}] if gemini_text else [],
-                "deepseek": [{"text": ground_truth_text}] if ground_truth_text else [],
+                args.provider: [{"text": ground_truth_text}] if ground_truth_text else [],
             }
             fout.write(json.dumps(out, ensure_ascii=False) + "\n")
             written += 1

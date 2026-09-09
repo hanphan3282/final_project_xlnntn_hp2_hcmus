@@ -348,7 +348,9 @@ def build_tasks(args: argparse.Namespace, done: dict[str, str]) -> tuple[list[Ta
 
         caption = authoritative["caption"]
         gemini_text = regions_text(gemini_row.get("gemini", []))
-        paddle_text = str(paddle_row.get("paddle_v6_text", ""))
+        paddle_text = str(
+            paddle_row.get("paddle_text", paddle_row.get("paddle_v6_text", ""))
+        )
         require_exact(caption, str(diff.get("label", "")), "caption valid ↔ Gemini_diff", image)
         require_exact(caption, str(paddle_row.get("original_label", "")), "caption valid ↔ Paddle input", image)
         require_exact(gemini_text, str(diff.get("gemini_text", "")), "Gemini gốc ↔ Gemini_diff", image)

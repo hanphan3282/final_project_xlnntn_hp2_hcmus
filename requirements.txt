@@ -1,0 +1,10 @@
+# Compatibility export for the legacy environment.yml.
+# The reproducible source of truth is pixi.toml + pixi.lock.
+chardet==5.2.0
+numpy==2.2.6
+openpyxl==3.1.5
+opencv-python-headless==4.12.0.88
+paddleocr==3.7.0
+paddlepaddle==3.3.1
+Pillow==11.3.0
+requests==2.32.5

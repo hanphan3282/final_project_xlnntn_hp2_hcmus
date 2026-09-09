@@ -265,7 +265,7 @@ def main() -> int:
         cpu_threads=args.cpu_threads,
         model_cache=args.model_cache,
         lang="chinese_cht",
-        ocr_version="PP-OCRv5",
+        ocr_version="PP-OCRv6",
         score_threshold=args.score_threshold,
         max_pending_factor=2,
         output_jsonl=output_jsonl,

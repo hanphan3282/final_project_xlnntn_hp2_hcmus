@@ -163,11 +163,90 @@ không phải symlink hoặc hardlink. Bước 3 tạo các bản sao này theo 
 
 ## 4. Cấu hình môi trường
 
+### Môi trường tái lập bằng Pixi (khuyến nghị)
+
+Repository dùng `pixi.toml` và commit `pixi.lock` để khóa toàn bộ môi trường
+Linux x86-64, gồm Python 3.10.20, Java 21, Nextflow 26.04.6, PaddlePaddle
+3.3.1, PaddleOCR 3.7.0 và các dependency bắc cầu. Không cài thêm package bằng
+`pip` sau khi đã tạo môi trường vì việc đó làm môi trường lệch khỏi lockfile.
+
 ```bash
-conda env create -f environment.yml
-conda activate NLP
+# Cài đúng những phiên bản trong pixi.lock, không tự cập nhật lockfile
+pixi install --locked
+
+# Kiểm tra Python và cấu hình Nextflow; không xử lý dữ liệu, không gọi API
+pixi run check
+
+# Dựng thử toàn bộ DAG; các process chỉ tạo stub, không gọi script/API
+pixi run pipeline-plan
+```
+
+`.pixi/` là môi trường cục bộ và không được commit. Hai file cần commit để tái
+lập là `pixi.toml` và `pixi.lock`.
+
+### Chạy end-to-end bằng Nextflow
+
+Workflow trong `main.nf` nối đúng tám bước manual bên dưới thành một DAG tuần
+tự. Mặc định `reuse_existing=true`: trước mỗi stage, workflow kiểm tra cấu trúc
+và JSON/JSONL đầu ra. Nếu output manual hợp lệ đã tồn tại, stage được ghi nhận
+là `SKIPPED_EXISTING` và không gọi lại API hay ghi đè kết quả.
+
+```bash
+# Chạy/adopt toàn bộ 8 stage
+pixi run pipeline
+
+# Chỉ chạy/adopt từ bước 5 đến bước 8
+pixi run pipeline --from_stage 5 --to_stage 8
+
+# Chọn provider Qwen cho bước adjudication
+pixi run pipeline --provider qwen
+```
+
+`--reuse_existing false` yêu cầu Nextflow gọi script của stage thay vì bỏ qua
+cả stage. Các script OCR/API vẫn giữ cơ chế resume theo từng record, nên không
+tự xóa thành quả trước đó. Chỉ dùng cờ `--overwrite` trực tiếp ở script manual
+khi thực sự muốn xóa và chạy lại output API.
+
+```bash
+pixi run pipeline --from_stage 4 --to_stage 8 --reuse_existing false
+```
+
+Profile pilot luôn dùng thư mục tách biệt `data-pilot/`, tránh làm thay đổi dữ
+liệu thật. Chuẩn bị input rồi mới chạy:
+
+```bash
+mkdir -p data-pilot/input
+cp data/input/valid.jsonl data-pilot/input/valid.jsonl
+pixi run nextflow run main.nf -profile pilot
+```
+
+Nextflow ghi `timeline.html`, `report.html`, `trace.tsv` và `dag.html` vào
+`reports/`. Thư mục làm việc là `.nextflow-work/`. Các thư mục này chỉ phục vụ
+theo dõi thực thi và không được commit. Cache process của Nextflow được tắt có
+chủ đích vì các script ghi vào kho dữ liệu dùng chung; việc resume an toàn do
+`workflow/run_stage.py` kiểm tra output và do từng script thực hiện ở cấp
+record.
+
+Các tham số tài nguyên thường chỉnh:
+
+| Tham số | Mặc định | Ý nghĩa |
+|---|---:|---|
+| `--fetch_workers` | 24 | Luồng tải ảnh |
+| `--gemini_workers` | 4 | Request Gemini đồng thời |
+| `--paddle_workers` | 2 | Số process Paddle CPU |
+| `--paddle_cpu_threads` | 4 | Thread cho mỗi process Paddle |
+| `--llm_workers` | 4 | Request adjudication đồng thời |
+| `--limit` | không giới hạn | Giới hạn số mẫu; ưu tiên dùng với profile pilot |
+
+### Kích hoạt môi trường và cấu hình API
+
+```bash
+pixi shell
 cp .env.example .env   # chỉnh sửa API key trước khi chạy
 ```
+
+`environment.yml` chỉ được giữ để tham khảo cho môi trường Conda cũ;
+`pixi.toml` và `pixi.lock` mới là nguồn cấu hình môi trường chính thức.
 
 Ví dụ cấu hình `.env`:
 
@@ -366,3 +445,39 @@ find data/output/Gemini_diff_Label/Images -type l | wc -l
 
 Không commit: `.env`, `data/input/Images/`, `data/output/`, `data/ground_truth_images/`,
 model cache và file tạm. Dữ liệu chia sẻ qua Google Drive và kiểm tra bằng SHA256SUMS.
+
+## 9. Đánh giá chéo dữ liệu nhóm khác
+
+`scripts/evaluate_cross_validation.py` tạo một workbook mới và không sửa file
+nguồn. Script ghép từng record với ground truth Nhóm 1 bằng **tên ảnh chính
+xác**, không ghép theo số dòng hoặc fuzzy text. Workbook kết quả giữ hyperlink
+Facebook để rà soát ảnh thủ công.
+
+Ví dụ đánh giá các ID 201–350 của file Nhóm 2:
+
+```bash
+pixi run cross-evaluate \
+  --input "Nhóm 2_validation_sent.xlsx" \
+  --ground-truth data/output/DeepSeek_ground_truth/ground_truth.jsonl \
+  --template "Kết quả đánh giá chéo 1-100.xlsx" \
+  --start-id 201 \
+  --end-id 350 \
+  --output "Kết quả đánh giá chéo 201-350.xlsx"
+```
+
+Ánh xạ cột đầu ra:
+
+| Cột | Nguồn/ý nghĩa |
+|---|---|
+| `No` | ID trong cột `#` của workbook Nhóm 2 |
+| `image` | Hyperlink của ô `Image` |
+| `ground_truth` | Cột `Label` do Nhóm 2 gửi |
+| `label` | Cột `FB Caption` để tham khảo |
+| `Corrected` | Ground truth Nhóm 1 trong `ground_truth.jsonl` |
+| `Levenshtein Accuracy` | `1 - distance/max_length`, bỏ ký tự xuống dòng |
+| `...bao gồm cả line break` | Cùng công thức nhưng giữ ký tự xuống dòng |
+| `Note` | Kết quả đối chiếu và cảnh báo cần kiểm tra ảnh |
+
+Các dòng không khớp tuyệt đối được đánh dấu màu vàng ở cột `Note`. Đây là
+kết quả đối chiếu văn bản tự động; cần mở hyperlink và đọc ảnh thủ công trước
+khi kết luận rằng ground truth của một trong hai nhóm bị sai.

@@ -101,7 +101,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--ocr-version", default="PP-OCRv6",
         choices=("PP-OCRv6",),
-        help="Phiên bản model bắt buộc của dự án (mặc định và duy nhất: PP-OCRv6)",
+        help="Phiên bản model bắt buộc của dự án (mặc định: PP-OCRv6)",
     )
     parser.add_argument("--score-threshold", type=float, default=0.30)
     parser.add_argument(
@@ -145,7 +145,7 @@ def set_cpu_environment(cpu_threads: int, model_cache: str) -> None:
         "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS", "FLAGS_paddle_num_threads",
     ):
         os.environ[name] = value
-    # Không bind OpenMP ở đây. Với nhiều process PP-OCRv6, libgomp có thể
+    # Không bind OpenMP ở đây. Với nhiều process PaddleOCR, libgomp có thể
     # thu hẹp affinity của *mọi* worker vào cùng một core vật lý (ví dụ hai
     # logical CPU 0,52), khiến workers tranh chấp nhau và chậm nghiêm trọng.
     # Để Linux phân phối các thread trên toàn bộ CPU được phép.
@@ -190,9 +190,8 @@ def init_worker(
         "use_textline_orientation": False,
         "text_rec_score_thresh": score_threshold,
     }
-    # PP-OCRv6 medium trên PaddlePaddle 3.3.1 hiện lỗi thực thi oneDNN với
-    # ArrayAttribute<DoubleAttribute>. Tắt MKLDNN riêng cho V6, nhưng vẫn giữ
-    # cpu_threads và chạy nhiều process để tận dụng CPU.
+    # Giữ MKLDNN tắt cho PP-OCRv6 trên CPU để tránh lỗi oneDNN đã quan sát với
+    # PaddlePaddle 3.3.1; vẫn dùng cpu_threads và nhiều process khi cần.
     enable_mkldnn = ocr_version != "PP-OCRv6"
     # Giữ fallback nếu một bản PaddleOCR khác không nhận hai tùy chọn CPU.
     try:

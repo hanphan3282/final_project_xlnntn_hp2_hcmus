@@ -1,0 +1,28 @@
+[workspace]
+name = "facebook-han-ocr-pipeline"
+version = "1.0.0"
+description = "Reproducible environment for the Facebook Han-character OCR pipeline"
+authors = ["HCMUS NLP project team"]
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.10.20.*"
+nextflow = "26.4.6.*"
+openjdk = "21.*"
+
+[pypi-dependencies]
+chardet = "==5.2.0"
+numpy = "==2.2.6"
+openpyxl = "==3.1.5"
+opencv-python-headless = "==4.12.0.88"
+paddleocr = "==3.7.0"
+paddlepaddle = "==3.3.1"
+pillow = "==11.3.0"
+requests = "==2.32.5"
+
+[tasks]
+pipeline = "nextflow run main.nf -profile standard"
+pipeline-plan = "nextflow run main.nf -profile standard -stub-run"
+check = "python workflow/check_setup.py && nextflow config -flat"
+cross-evaluate = "python scripts/evaluate_cross_validation.py"

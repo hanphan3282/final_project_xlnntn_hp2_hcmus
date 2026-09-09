@@ -3,7 +3,7 @@
 
 Script đọc ``data/mrDuc_data/valid.jsonl``, ghép ảnh local theo
 ``Images/{post_id}_{index}.jpg`` và ghi JSONL tăng dần để hỗ trợ resume.
-Đây là pipeline API/LLM, không phải PP-OCRv6.
+Đây là pipeline API/LLM, không phải PP-OCRv6 local.
 """
 
 from __future__ import annotations

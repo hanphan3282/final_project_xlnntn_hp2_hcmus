@@ -102,6 +102,7 @@ def build_candidate_labels(
                 "local_path": record.get("local_path", ""),
                 "original_label": record.get("label", ""),
                 "gemini_text": record.get("gemini_text", ""),
+                "paddle_text": label,
                 "paddle_v6_text": label,
                 "proposed_label": label,
                 "proposal_source": "PP-OCRv6",

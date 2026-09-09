@@ -55,6 +55,21 @@ __pycache__/
 *.pyc
 *.egg-info/
 .venv/
+.pixi/
+.nextflow/
+.nextflow-work/
+.nextflow.log*
+reports/
+
+# Pilot chia sẻ: chỉ commit manifest và 10 ảnh input đã chuẩn hóa.
+# Output, ground_truth_images và Images.original-* tiếp tục bị ignore.
+data-pilot/*
+!data-pilot/input/
+data-pilot/input/*
+!data-pilot/input/valid.jsonl
+!data-pilot/input/Images/
+data-pilot/input/Images/*
+!data-pilot/input/Images/*.jpg
 
 # Jupyter
 .ipynb_checkpoints/

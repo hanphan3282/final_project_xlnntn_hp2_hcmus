@@ -447,10 +447,27 @@ def main() -> int:
     print(f"Cần tải: {len(tasks)}; workers: {args.workers}; retries: {args.retries}")
     print(f"Ngưỡng dừng lỗi: {args.max_fail_rate:.0%} sau ít nhất 100 lượt")
 
-    if args.dry_run or not tasks:
+    if args.dry_run:
         return 0
 
-    run_stats = run_downloads(tasks, args)
+    if tasks:
+        run_stats = run_downloads(tasks, args)
+    else:
+        # Chế độ ảnh local: vẫn tạo đủ artifact để Nextflow xác nhận stage 1
+        # hoàn tất, dù không có URL nào cần tải.
+        args.error_log.parent.mkdir(parents=True, exist_ok=True)
+        args.error_log.write_text("", encoding="utf-8")
+        run_stats = {
+            "downloaded": 0,
+            "failed": 0,
+            "completed_this_run": 0,
+            "not_attempted_due_to_abort": 0,
+            "bytes_written": 0,
+            "gib_written": 0.0,
+            "elapsed_seconds": 0.0,
+            "images_per_second": 0.0,
+            "aborted_high_failure_rate": False,
+        }
     summary = {
         "input": str(args.input.resolve()),
         "images_dir": str(args.images_dir.resolve()),
